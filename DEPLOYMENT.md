@@ -55,7 +55,27 @@ mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/money-manager?retryWr
 
 ## Backend Deployment
 
-### Option 1: Heroku (Recommended for beginners)
+### Option 1: Render (Recommended - Free Tier)
+
+This repo includes a `render.yaml` blueprint that can deploy both backend and frontend in one click.
+
+Steps:
+1. Push this repo to GitHub.
+2. In Render, click "New +" and select "Blueprint".
+3. Choose the repo and approve the services.
+4. Set environment variables:
+   - `MONGODB_URI` (required)
+   - `CORS_ORIGIN` (set to your frontend URL after frontend deploy)
+5. Deploy and wait for the backend URL.
+
+Backend health check:
+```
+https://your-backend.onrender.com/health
+```
+
+---
+
+### Option 2: Heroku (Legacy)
 
 #### Prerequisites
 - Heroku account (free tier available)
@@ -120,7 +140,7 @@ Your backend will be available at: `https://money-manager-backend-yourname.herok
 
 ---
 
-### Option 2: Railway
+### Option 3: Railway
 
 #### Steps
 
@@ -146,7 +166,7 @@ Your backend will be available at: `https://money-manager-backend-yourname.herok
 
 ---
 
-### Option 3: Render
+### Option 4: Render (Manual Setup)
 
 #### Steps
 
@@ -178,7 +198,21 @@ Your backend will be available at: `https://money-manager-backend-yourname.herok
 
 ## Frontend Deployment
 
-### Option 1: Vercel (Recommended)
+### Option 1: Render (Recommended - Free Tier)
+
+If you used the `render.yaml` blueprint, Render will also create the frontend service automatically.
+
+Steps:
+1. Open the frontend service in Render.
+2. Set the environment variable:
+   - `REACT_APP_API_URL` = `https://your-backend.onrender.com/api`
+3. Trigger a new deploy.
+
+Your frontend will be available at: `https://your-frontend.onrender.com`
+
+---
+
+### Option 2: Vercel
 
 #### Prerequisites
 - Vercel account
@@ -219,7 +253,7 @@ Your frontend will be available at: `https://money-manager-frontend.vercel.app`
 
 ---
 
-### Option 2: Netlify
+### Option 3: Netlify
 
 #### Steps
 
@@ -250,7 +284,7 @@ npm run build
 
 ---
 
-### Option 3: GitHub Pages
+### Option 4: GitHub Pages
 
 #### Steps
 
@@ -315,10 +349,10 @@ curl https://your-backend-url.herokuapp.com/health
 If you get CORS errors, update backend `server.js`:
 
 ```javascript
-app.use(cors({
-  origin: 'https://your-frontend-url.vercel.app',
-  credentials: true
-}));
+Set `CORS_ORIGIN` in the backend service:
+```
+CORS_ORIGIN=https://your-frontend.onrender.com
+```
 ```
 
 ### 4. Monitor Application

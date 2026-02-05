@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 const Account = require('../models/Account');
 
 // Validation middleware
@@ -11,6 +12,13 @@ const validateAccount = [
     .withMessage('Invalid account type'),
   body('balance').optional().isFloat({ min: 0 }).withMessage('Balance must be a positive number'),
 ];
+
+const validateObjectId = (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ message: 'Invalid account ID' });
+  }
+  return next();
+};
 
 // @route   GET /api/accounts
 // @desc    Get all accounts
@@ -27,7 +35,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/accounts/:id
 // @desc    Get account by ID
 // @access  Public
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateObjectId, async (req, res) => {
   try {
     const account = await Account.findById(req.params.id);
 
@@ -52,11 +60,15 @@ router.post('/', validateAccount, async (req, res) => {
     }
 
     const { name, type, balance, currency, description } = req.body;
+    const parsedBalance = balance !== undefined ? Number(balance) : 0;
+    if (!Number.isFinite(parsedBalance) || parsedBalance < 0) {
+      return res.status(400).json({ message: 'Balance must be a positive number' });
+    }
 
     const account = new Account({
       name,
       type,
-      balance: balance || 0,
+      balance: parsedBalance,
       currency: currency || 'INR',
       description,
     });
@@ -71,7 +83,7 @@ router.post('/', validateAccount, async (req, res) => {
 // @route   PUT /api/accounts/:id
 // @desc    Update account
 // @access  Public
-router.put('/:id', validateAccount, async (req, res) => {
+router.put('/:id', validateObjectId, validateAccount, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -85,10 +97,15 @@ router.put('/:id', validateAccount, async (req, res) => {
     }
 
     const { name, type, balance, currency, description } = req.body;
+    const parsedBalance =
+      balance !== undefined ? Number(balance) : account.balance;
+    if (!Number.isFinite(parsedBalance) || parsedBalance < 0) {
+      return res.status(400).json({ message: 'Balance must be a positive number' });
+    }
 
     account.name = name;
     account.type = type;
-    account.balance = balance !== undefined ? balance : account.balance;
+    account.balance = parsedBalance;
     account.currency = currency || account.currency;
     account.description = description;
 
@@ -102,7 +119,7 @@ router.put('/:id', validateAccount, async (req, res) => {
 // @route   DELETE /api/accounts/:id
 // @desc    Delete account
 // @access  Public
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateObjectId, async (req, res) => {
   try {
     const account = await Account.findById(req.params.id);
 
@@ -130,7 +147,15 @@ router.post('/transfer', async (req, res) => {
       });
     }
 
-    if (amount <= 0) {
+    if (
+      !mongoose.isValidObjectId(fromAccountId) ||
+      !mongoose.isValidObjectId(toAccountId)
+    ) {
+      return res.status(400).json({ message: 'Invalid account ID' });
+    }
+
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       return res.status(400).json({ message: 'Amount must be positive' });
     }
 
@@ -141,12 +166,12 @@ router.post('/transfer', async (req, res) => {
       return res.status(404).json({ message: 'One or both accounts not found' });
     }
 
-    if (fromAccount.balance < amount) {
+    if (fromAccount.balance < parsedAmount) {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
 
-    fromAccount.balance -= amount;
-    toAccount.balance += amount;
+    fromAccount.balance -= parsedAmount;
+    toAccount.balance += parsedAmount;
 
     await fromAccount.save();
     await toAccount.save();
