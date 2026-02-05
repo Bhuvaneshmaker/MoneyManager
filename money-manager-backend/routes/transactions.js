@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
+const requireAuth = require('../middleware/auth');
 
 // Validation middleware
 const validateTransaction = [
@@ -34,9 +35,9 @@ const validateObjectId = (req, res, next) => {
 // @route   GET /api/transactions
 // @desc    Get all transactions
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const transactions = await Transaction.find().sort({ date: -1 });
+    const transactions = await Transaction.find({ userId: req.user.uid }).sort({ date: -1 });
     res.json(transactions);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
@@ -46,7 +47,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/transactions/filter
 // @desc    Get filtered transactions
 // @access  Public
-router.get('/filter', validateDateRange, async (req, res) => {
+router.get('/filter', requireAuth, validateDateRange, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -54,7 +55,7 @@ router.get('/filter', validateDateRange, async (req, res) => {
     }
 
     const { type, category, division, startDate, endDate } = req.query;
-    const filter = {};
+    const filter = { userId: req.user.uid };
 
     if (type) filter.type = type;
     if (category) filter.category = category;
@@ -77,7 +78,7 @@ router.get('/filter', validateDateRange, async (req, res) => {
 // @route   GET /api/transactions/summary
 // @desc    Get transaction summary
 // @access  Public
-router.get('/summary', validateDateRange, async (req, res) => {
+router.get('/summary', requireAuth, validateDateRange, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -85,7 +86,7 @@ router.get('/summary', validateDateRange, async (req, res) => {
     }
 
     const { startDate, endDate } = req.query;
-    const filter = {};
+    const filter = { userId: req.user.uid };
 
     if (startDate && endDate) {
       filter.date = {
@@ -133,7 +134,7 @@ router.get('/summary', validateDateRange, async (req, res) => {
 // @route   GET /api/transactions/date-range
 // @desc    Get transactions by date range
 // @access  Public
-router.get('/date-range', validateRequiredDateRange, async (req, res) => {
+router.get('/date-range', requireAuth, validateRequiredDateRange, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -143,6 +144,7 @@ router.get('/date-range', validateRequiredDateRange, async (req, res) => {
     const { startDate, endDate } = req.query;
 
     const transactions = await Transaction.find({
+      userId: req.user.uid,
       date: {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
@@ -158,9 +160,12 @@ router.get('/date-range', validateRequiredDateRange, async (req, res) => {
 // @route   GET /api/transactions/:id
 // @desc    Get transaction by ID
 // @access  Public
-router.get('/:id', validateObjectId, async (req, res) => {
+router.get('/:id', requireAuth, validateObjectId, async (req, res) => {
   try {
-    const transaction = await Transaction.findById(req.params.id);
+    const transaction = await Transaction.findOne({
+      _id: req.params.id,
+      userId: req.user.uid,
+    });
 
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
@@ -175,7 +180,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
 // @route   POST /api/transactions
 // @desc    Create new transaction
 // @access  Public
-router.post('/', validateTransaction, async (req, res) => {
+router.post('/', requireAuth, validateTransaction, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -198,6 +203,7 @@ router.post('/', validateTransaction, async (req, res) => {
       category: txCategory,
       division,
       date: txDate,
+      userId: req.user.uid,
     });
 
     const savedTransaction = await transaction.save();
@@ -227,14 +233,17 @@ router.post('/', validateTransaction, async (req, res) => {
 // @route   PUT /api/transactions/:id
 // @desc    Update transaction
 // @access  Public
-router.put('/:id', validateObjectId, validateTransaction, async (req, res) => {
+router.put('/:id', requireAuth, validateObjectId, validateTransaction, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const transaction = await Transaction.findById(req.params.id);
+    const transaction = await Transaction.findOne({
+      _id: req.params.id,
+      userId: req.user.uid,
+    });
 
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
@@ -271,9 +280,12 @@ router.put('/:id', validateObjectId, validateTransaction, async (req, res) => {
 // @route   DELETE /api/transactions/:id
 // @desc    Delete transaction
 // @access  Public
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete('/:id', requireAuth, validateObjectId, async (req, res) => {
   try {
-    const transaction = await Transaction.findById(req.params.id);
+    const transaction = await Transaction.findOne({
+      _id: req.params.id,
+      userId: req.user.uid,
+    });
 
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });

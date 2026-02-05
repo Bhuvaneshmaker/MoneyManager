@@ -46,6 +46,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.get('/api/auth/me', require('./middleware/auth'), (req, res) => {
+  res.json({ uid: req.user.uid, email: req.user.email });
+});
 app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/accounts', require('./routes/accounts'));
 

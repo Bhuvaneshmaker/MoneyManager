@@ -1,3 +1,9 @@
+Full Stack Money Manager Repo:
+https://github.com/Bhuvaneshmaker/MoneyManager
+
+Full Stack Money Manager last Commit:
+d524c2405f2cdca7665de96132749acb97c149cf
+
 Frontend Repo:
 https://github.com/Bhuvaneshmaker/money-manager-frontend
 
@@ -5,13 +11,15 @@ Backend Repo:
 https://github.com/Bhuvaneshmaker/money-manager-backend
 
 Frontend URL:
-https://money-manager-frontend-alpha.vercel.app/
+https://moneymanager-u4lh.onrender.com/
 
 Backend URL:
-https://money-manager-backend.onrender.com
+https://money-manager-backend-xp5r.onrender.com
 
 Frontend last commit:
 32086c68d55b1db8ef53d277cbc6b0c28bac1795
 
 Backend last commit:
-e14f49f1c276fb27d686a434119b260d5b8c39cd
+bc3b9b2409445471780f9b7d1b097a150fecea54
+
+Tota

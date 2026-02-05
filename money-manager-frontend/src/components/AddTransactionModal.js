@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { CATEGORIES, DIVISIONS, TRANSACTION_TYPES } from '../utils/constants';
+import { CATEGORIES, DIVISIONS } from '../utils/constants';
 
 const AddTransactionModal = ({ isOpen, onClose, onSubmit, editTransaction }) => {
   const [activeTab, setActiveTab] = useState('income');

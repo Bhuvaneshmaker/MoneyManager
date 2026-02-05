@@ -26,6 +26,11 @@ const accountSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    userId: {
+      type: String,
+      required: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

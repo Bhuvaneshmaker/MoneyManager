@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, BarChart3, History, TrendingUp } from 'lucide-react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Plus, BarChart3, History, TrendingUp, LogOut } from 'lucide-react';
 import AddTransactionModal from './components/AddTransactionModal';
 import Dashboard from './components/Dashboard';
 import TransactionHistory from './components/TransactionHistory';
 import FilterPanel from './components/FilterPanel';
+import ProtectedRoute from './components/ProtectedRoute';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
 import { transactionAPI } from './services/api';
 import { calculateSummary, getDateRange } from './utils/helpers';
+import { useAuth } from './context/AuthContext';
 
-function App() {
+function MainApp() {
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [period, setPeriod] = useState('monthly');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -124,16 +130,29 @@ function App() {
                 <p className="text-blue-100 text-sm">Track your finances easily</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setEditTransaction(null);
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition shadow-md"
-            >
-              <Plus size={20} />
-              Add Transaction
-            </button>
+            <div className="flex items-center gap-3">
+              {user?.email && (
+                <div className="text-sm text-blue-100 hidden md:block">{user.email}</div>
+              )}
+              <button
+                onClick={() => {
+                  setEditTransaction(null);
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition shadow-md"
+              >
+                <Plus size={20} />
+                Add Transaction
+              </button>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-2 bg-blue-800 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-900 transition shadow-md"
+                title="Sign out"
+              >
+                <LogOut size={18} />
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -242,6 +261,24 @@ function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <MainApp />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

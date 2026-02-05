@@ -35,6 +35,11 @@ const transactionSchema = new mongoose.Schema(
       enum: ['personal', 'office'],
       default: 'personal',
     },
+    userId: {
+      type: String,
+      required: true,
+      index: true,
+    },
     date: {
       type: Date,
       required: true,

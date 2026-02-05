@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 const Account = require('../models/Account');
+const requireAuth = require('../middleware/auth');
 
 // Validation middleware
 const validateAccount = [
@@ -23,9 +24,9 @@ const validateObjectId = (req, res, next) => {
 // @route   GET /api/accounts
 // @desc    Get all accounts
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const accounts = await Account.find().sort({ createdAt: -1 });
+    const accounts = await Account.find({ userId: req.user.uid }).sort({ createdAt: -1 });
     res.json(accounts);
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
@@ -35,9 +36,9 @@ router.get('/', async (req, res) => {
 // @route   GET /api/accounts/:id
 // @desc    Get account by ID
 // @access  Public
-router.get('/:id', validateObjectId, async (req, res) => {
+router.get('/:id', requireAuth, validateObjectId, async (req, res) => {
   try {
-    const account = await Account.findById(req.params.id);
+    const account = await Account.findOne({ _id: req.params.id, userId: req.user.uid });
 
     if (!account) {
       return res.status(404).json({ message: 'Account not found' });
@@ -52,7 +53,7 @@ router.get('/:id', validateObjectId, async (req, res) => {
 // @route   POST /api/accounts
 // @desc    Create new account
 // @access  Public
-router.post('/', validateAccount, async (req, res) => {
+router.post('/', requireAuth, validateAccount, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -71,6 +72,7 @@ router.post('/', validateAccount, async (req, res) => {
       balance: parsedBalance,
       currency: currency || 'INR',
       description,
+      userId: req.user.uid,
     });
 
     const savedAccount = await account.save();
@@ -83,14 +85,14 @@ router.post('/', validateAccount, async (req, res) => {
 // @route   PUT /api/accounts/:id
 // @desc    Update account
 // @access  Public
-router.put('/:id', validateObjectId, validateAccount, async (req, res) => {
+router.put('/:id', requireAuth, validateObjectId, validateAccount, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const account = await Account.findById(req.params.id);
+    const account = await Account.findOne({ _id: req.params.id, userId: req.user.uid });
 
     if (!account) {
       return res.status(404).json({ message: 'Account not found' });
@@ -119,9 +121,9 @@ router.put('/:id', validateObjectId, validateAccount, async (req, res) => {
 // @route   DELETE /api/accounts/:id
 // @desc    Delete account
 // @access  Public
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete('/:id', requireAuth, validateObjectId, async (req, res) => {
   try {
-    const account = await Account.findById(req.params.id);
+    const account = await Account.findOne({ _id: req.params.id, userId: req.user.uid });
 
     if (!account) {
       return res.status(404).json({ message: 'Account not found' });
@@ -137,7 +139,7 @@ router.delete('/:id', validateObjectId, async (req, res) => {
 // @route   POST /api/accounts/transfer
 // @desc    Transfer money between accounts
 // @access  Public
-router.post('/transfer', async (req, res) => {
+router.post('/transfer', requireAuth, async (req, res) => {
   try {
     const { fromAccountId, toAccountId, amount } = req.body;
 
@@ -159,8 +161,14 @@ router.post('/transfer', async (req, res) => {
       return res.status(400).json({ message: 'Amount must be positive' });
     }
 
-    const fromAccount = await Account.findById(fromAccountId);
-    const toAccount = await Account.findById(toAccountId);
+    const fromAccount = await Account.findOne({
+      _id: fromAccountId,
+      userId: req.user.uid,
+    });
+    const toAccount = await Account.findOne({
+      _id: toAccountId,
+      userId: req.user.uid,
+    });
 
     if (!fromAccount || !toAccount) {
       return res.status(404).json({ message: 'One or both accounts not found' });
